@@ -235,6 +235,11 @@ Confidence starts at `1.0` and degrades per failed check. If `confidence < 0.6`,
 ├── README.md               # This file
 └── CONTRIBUTING.md         # Contribution guidelines
 ```
+DEMO
+https://youtu.be/BIj7K1StJOk
+
+SCREENSHOT-
+<img width="1366" height="768" alt="Screenshot (61)" src="https://github.com/user-attachments/assets/fc604459-3014-43b4-9b74-9ae25b891824" />
 
 ---
 
