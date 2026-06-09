@@ -1,0 +1,794 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "RESUME ANALYSIS AI AGENT",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Full name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email Address",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Phone Number",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Resume",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Job description"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -16,
+        1120
+      ],
+      "id": "44e36af9-7115-4202-abec-72020ba990df",
+      "name": "On form submission",
+      "webhookId": "1b09b8ce-d6f7-447c-99b4-5d899fc2956c"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "=Resume",
+        "name": "={{ $json['Full name'] }} -CV",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1Exmrgx1Gy1TWPB0z0Z98AbfdSdAzyJzD",
+          "mode": "list",
+          "cachedResultName": "RESUME SCREENING AI AGENT",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1Exmrgx1Gy1TWPB0z0Z98AbfdSdAzyJzD"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        224,
+        1120
+      ],
+      "id": "a2e2f7b7-3d97-4c32-ad05-a2962f73298a",
+      "name": "Upload Resume",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "V1J8O599cLWRCnEe",
+          "name": "RESUME SCREENING AI AGENT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        464,
+        1120
+      ],
+      "id": "5ee5f199-5335-4930-bb02-709fd31f53c1",
+      "name": "Download Resume",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "V1J8O599cLWRCnEe",
+          "name": "RESUME SCREENING AI AGENT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        704,
+        1120
+      ],
+      "id": "e0913a43-7ec6-47d7-87a1-3a045efd02e7",
+      "name": "Extract Resume Text"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1S-npsvzXuxRfF4Wb3u03CMXjrzNfZGhH",
+          "mode": "list",
+          "cachedResultName": "Agentic_AI_Engineer_Job_Description.pdf",
+          "cachedResultUrl": "https://drive.google.com/file/d/1S-npsvzXuxRfF4Wb3u03CMXjrzNfZGhH/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        944,
+        1120
+      ],
+      "id": "ee452d2a-11cc-48e3-a75b-f1c4502441b8",
+      "name": "Download JD",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "V1J8O599cLWRCnEe",
+          "name": "RESUME SCREENING AI AGENT"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        1184,
+        1120
+      ],
+      "id": "489d9223-5767-4d38-bffd-43b24545f1cf",
+      "name": "Extract JD Text"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Resume Text:\n{{ $('Extract Resume Text').item.json.text }}\n\nJob Description:\n{{ $json.jd }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are the PARSER AGENT in a multi-agent resume screening pipeline.\n\nYour ONLY job is to extract structured data from two sources:\n1. The candidate's resume text\n2. The job description text\n\nYou do NOT score, judge, rank, or analyze — you only extract.\n\n═══════════════════════════════════════\nEXTRACT FROM RESUME → output under \"candidate\"\n═══════════════════════════════════════\n\n- name: Full name of the candidate\n- email: Email address if present, else empty string\n- total_experience_years: Sum all roles and calculate total years (e.g. 2020–2023 = 3 years). Return as a number, not a string.\n- current_role: Most recent job title held\n- education_level: Highest degree attained. Must be exactly one of: \"High School\", \"Associate\", \"Bachelor's\", \"Master's\", \"PhD\", \"Other\"\n- technical_skills: Every tool, language, framework, library, platform, or technology explicitly mentioned. Extract verbatim. Do NOT infer from job titles.\n- soft_skills: Every soft skill explicitly mentioned (e.g. \"leadership\", \"communication\"). Do NOT infer.\n- job_titles_held: Every job title held, listed oldest to newest.\n\n═══════════════════════════════════════\nEXTRACT FROM JOB DESCRIPTION → output under \"job\"\n═══════════════════════════════════════\n\n- required_skills: All must-have technical skills (look for: \"required\", \"must have\", \"you must\", \"minimum\")\n- preferred_skills: All nice-to-have skills (look for: \"preferred\", \"nice to have\", \"bonus\", \"plus\")\n- required_experience_years: The minimum years of experience stated. Return as a number. If a range is given (e.g. \"3–5 years\"), use the lower bound.\n- key_responsibilities: Each core responsibility as a separate string. Be concise.\n\n═══════════════════════════════════════\nSTRICT RULES\n═══════════════════════════════════════\n\n1. Return ONLY valid JSON. No markdown, no code fences, no explanation.\n2. Never infer or assume a skill not explicitly written in the text.\n3. All array fields must be arrays even if empty (use [] not null).\n4. total_experience_years and required_experience_years must be numbers, not strings.\n5. If a field cannot be found, use: \"\" for strings, 0 for numbers, [] for arrays.\n6. Do NOT merge candidate and job data — keep them in separate objects."
+        }
+      },
+      "id": "99adbc56-4025-4188-a507-b777867ecd5e",
+      "name": "🧩 Parser Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1632,
+        1120
+      ],
+      "retryOnFail": false,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Parsed Data:\n{{ JSON.stringify($json.output) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are the Matching Agent. Your ONLY job is to compare the candidate's skills against the job's required skills.\n\nGiven the parsed data:\n1. matched_skills: skills from required_skills that exist in resume_skills (case-insensitive)\n2. missing_skills: skills from required_skills NOT found in resume_skills\n3. bonus_skills: skills in resume_skills that are NOT in required_skills but are valuable\n4. match_percentage: (matched_skills.length / required_skills.length) * 100, rounded to integer\n\nBe strict — only mark a skill as matched if it is clearly present. Return ONLY valid JSON. No explanation."
+        }
+      },
+      "id": "bb5c5b3e-e83b-4c85-a5fc-d6bb504b3213",
+      "name": "🧩 Matching Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2032,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2032,
+        1360
+      ],
+      "id": "d4531689-a47b-409f-a9b3-62dc8a3da52d",
+      "name": "Gemini — Matching",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "TQykqpJavdSx01R7",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"matched_skills\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" },\n      \"description\": \"Skills from job.required_skills that are clearly present in candidate.technical_skills.\"\n    },\n    \"missing_skills\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" },\n      \"description\": \"Skills from job.required_skills that are NOT found in candidate.technical_skills.\"\n    },\n    \"bonus_skills\": {\n      \"type\": \"array\",\n      \"items\": { \"type\": \"string\" },\n      \"description\": \"Candidate skills not required by the JD but still relevant and valuable.\"\n    },\n    \"match_percentage\": {\n      \"type\": \"number\",\n      \"minimum\": 0,\n      \"maximum\": 100,\n      \"description\": \"Integer percentage: (matched_skills.length / required_skills.length) * 100, rounded to nearest integer.\"\n    }\n  },\n  \"required\": [\"matched_skills\", \"missing_skills\", \"bonus_skills\", \"match_percentage\"]\n}"
+      },
+      "id": "db7fcd71-8098-4db4-97cb-9bbb51f7d9f1",
+      "name": "Matching Output Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2176,
+        1360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// === SCORING ENGINE ===\n\n// Safely get output — already an object OR a raw string\nfunction safeGet(raw) {\n  if (typeof raw === 'object' && raw !== null) return raw;   // already parsed\n  if (typeof raw === 'string') {\n    const cleaned = raw\n      .replace(/^```json\\s*/i, '')\n      .replace(/^```\\s*/i, '')\n      .replace(/```\\s*$/i, '')\n      .trim();\n    return JSON.parse(cleaned);\n  }\n  return {};\n}\n\nconst matchingOutput = safeGet($('🧩 Matching Agent').item.json.output);\nconst parserOutput   = safeGet($('🧩 Parser Agent').item.json.output);\n\nconst candidate   = parserOutput.candidate || {};\nconst job         = parserOutput.job       || {};\n\nconst matched  = Array.isArray(matchingOutput.matched_skills) ? matchingOutput.matched_skills : [];\nconst missing  = Array.isArray(matchingOutput.missing_skills) ? matchingOutput.missing_skills : [];\n\nconst total    = matched.length + missing.length;\nconst matchPct = total > 0 ? Math.round((matched.length / total) * 100) : 0;\n\nconst expYears    = Number(candidate.total_experience_years) || 0;\nconst requiredExp = Number(job.required_experience_years)    || 3;\n\nconst expScore       = Math.min((expYears / requiredExp) * 100, 100);\nconst compositeScore = Math.round((matchPct * 0.65) + (expScore * 0.35));\n\nlet tier = 'No Hire';\nif      (compositeScore >= 80) tier = 'Strong Hire';\nelse if (compositeScore >= 65) tier = 'Hire';\nelse if (compositeScore >= 45) tier = 'Maybe';\n\nlet nextStep = 'Reject';\nif      (tier === 'Strong Hire') nextStep = 'Advance to Technical Round';\nelse if (tier === 'Hire')        nextStep = 'Advance to HR Round';\nelse if (tier === 'Maybe')       nextStep = 'Request Portfolio / Work Samples';\n\nreturn [{\n  json: {\n    scoring: {\n      skill_match_pct:       matchPct,\n      experience_score:      Math.round(expScore),\n      composite_score:       compositeScore,\n      tier:                  tier,\n      recommended_next_step: nextStep,\n      breakdown: { skill_weight: '65%', experience_weight: '35%' }\n    },\n    candidate:      candidate,\n    job:            job,\n    matched_skills: matched,\n    missing_skills: missing,\n    bonus_skills:   Array.isArray(matchingOutput.bonus_skills) ? matchingOutput.bonus_skills : []\n  }\n}];"
+      },
+      "id": "5799fb1a-f81a-4972-a657-394cb0d424f5",
+      "name": "🧩 Scoring Engine (Code)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2432,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Resume Text:\n{{ $('Extract Resume Text').item.json.text }}\n\nJob Description:\n{{ $('Extract JD Text').item.json.text }}\n\nSkill Matching Result:\n{{ JSON.stringify($('🧩 Matching Agent').item.json.output) }}\n\nScoring Result:\n{{ JSON.stringify($('🧩 Scoring Engine (Code)').item.json.scoring) }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are the Decision Agent — a senior technical recruiter making the final hiring assessment.\n\nYou have been given:\n- Full resume text\n- Full job description\n- Skill match result (matched, missing, bonus skills and match %)\n- Scoring result (composite score and tier)\n\nYour tasks:\n1. Identify 2-4 specific candidate strengths with evidence from the resume\n2. Identify 2-3 specific weaknesses/gaps based on the JD requirements\n3. Assign risk_factor (Low/Medium/High) with explanation of worst-case scenario if hired\n4. Assign reward_factor (Low/Medium/High) and fit_horizon (Short-term/Long-term/Both) with best-case explanation\n5. Evaluate justification quality: how well the resume evidences the claimed skills (0-10 score, confidence level, red flags, supporting evidence)\n6. Assess overfit: is the candidate overqualified? flag dimensions if so\n7. Write a 2-3 sentence executive summary for the hiring decision\n\nReturn ONLY valid JSON. No preamble, no markdown."
+        }
+      },
+      "id": "2a3fdf02-7986-44f0-96a9-8310a75b5c96",
+      "name": "🧩 Decision Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2672,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        1360
+      ],
+      "id": "7a8a24d1-7a74-45ef-9aa0-893fcbe7431d",
+      "name": "Gemini — Decision",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "TQykqpJavdSx01R7",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n\n    \"candidate_strengths\": {\n      \"type\": \"array\",\n      \"description\": \"2 to 4 specific strengths with evidence from the resume.\",\n      \"minItems\": 2,\n      \"maxItems\": 4,\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"title\":  { \"type\": \"string\", \"description\": \"Short label, e.g. 'Strong Python background'.\" },\n          \"detail\": { \"type\": \"string\", \"description\": \"Evidence-backed elaboration from the resume.\" }\n        },\n        \"required\": [\"title\", \"detail\"]\n      }\n    },\n\n    \"candidate_weaknesses\": {\n      \"type\": \"array\",\n      \"description\": \"2 to 3 specific gaps based on the JD requirements.\",\n      \"minItems\": 2,\n      \"maxItems\": 3,\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"title\":    { \"type\": \"string\", \"description\": \"Short label, e.g. 'No cloud experience'.\" },\n          \"severity\": {\n            \"type\": \"string\",\n            \"enum\": [\"Minor\", \"Moderate\", \"Critical\"],\n            \"description\": \"How blocking this gap is for the role.\"\n          },\n          \"detail\":   { \"type\": \"string\", \"description\": \"Explanation of the gap and its hiring impact.\" }\n        },\n        \"required\": [\"title\", \"severity\", \"detail\"]\n      }\n    },\n\n    \"risk_factor\": {\n      \"type\": \"object\",\n      \"description\": \"Potential downside of hiring this candidate.\",\n      \"properties\": {\n        \"score\": {\n          \"type\": \"string\",\n          \"enum\": [\"Low\", \"Medium\", \"High\"]\n        },\n        \"explanation\": {\n          \"type\": \"string\",\n          \"description\": \"Worst-case scenario if the candidate is hired and underperforms.\"\n        }\n      },\n      \"required\": [\"score\", \"explanation\"]\n    },\n\n    \"reward_factor\": {\n      \"type\": \"object\",\n      \"description\": \"Potential upside of hiring this candidate.\",\n      \"properties\": {\n        \"score\": {\n          \"type\": \"string\",\n          \"enum\": [\"Low\", \"Medium\", \"High\"]\n        },\n        \"fit_horizon\": {\n          \"type\": \"string\",\n          \"enum\": [\"Short-term\", \"Long-term\", \"Both\"],\n          \"description\": \"Whether the candidate is a short-term executor or long-term growth bet.\"\n        },\n        \"explanation\": {\n          \"type\": \"string\",\n          \"description\": \"Best-case scenario and strategic value if the candidate thrives.\"\n        }\n      },\n      \"required\": [\"score\", \"fit_horizon\", \"explanation\"]\n    },\n\n    \"justification_rating\": {\n      \"type\": \"object\",\n      \"description\": \"How well the resume evidences the candidate's claimed skills.\",\n      \"properties\": {\n        \"score\": {\n          \"type\": \"number\",\n          \"minimum\": 0,\n          \"maximum\": 10,\n          \"description\": \"0–10. How credible and evidence-backed are the resume claims.\"\n        },\n        \"confidence_level\": {\n          \"type\": \"string\",\n          \"enum\": [\"Unverifiable\", \"Weak\", \"Moderate\", \"Strong\", \"Exceptional\"]\n        },\n        \"red_flags\": {\n          \"type\": \"array\",\n          \"items\": { \"type\": \"string\" },\n          \"description\": \"Inconsistencies, vague claims, or unsupported assertions in the resume.\"\n        },\n        \"supporting_evidence\": {\n          \"type\": \"array\",\n          \"items\": { \"type\": \"string\" },\n          \"description\": \"Concrete examples — metrics, projects, outcomes — that back the candidate's claims.\"\n        },\n        \"explanation\": {\n          \"type\": \"string\",\n          \"description\": \"Overall reasoning for the justification score.\"\n        }\n      },\n      \"required\": [\"score\", \"confidence_level\", \"explanation\"]\n    },\n\n    \"overfit_rating\": {\n      \"type\": \"object\",\n      \"description\": \"Whether the candidate is overqualified and may disengage or leave early.\",\n      \"properties\": {\n        \"is_overfit\": {\n          \"type\": \"boolean\"\n        },\n        \"severity\": {\n          \"type\": \"string\",\n          \"enum\": [\"None\", \"Slight\", \"Moderate\", \"Severe\"]\n        },\n        \"retention_risk\": {\n          \"type\": \"string\",\n          \"enum\": [\"Low\", \"Medium\", \"High\"]\n        },\n        \"explanation\": {\n          \"type\": \"string\"\n        }\n      },\n      \"required\": [\"is_overfit\", \"severity\", \"retention_risk\", \"explanation\"]\n    },\n\n    \"executive_summary\": {\n      \"type\": \"string\",\n      \"description\": \"2–3 sentence summary of the final hiring decision and rationale.\"\n    }\n\n  },\n  \"required\": [\n    \"candidate_strengths\",\n    \"candidate_weaknesses\",\n    \"risk_factor\",\n    \"reward_factor\",\n    \"justification_rating\",\n    \"overfit_rating\",\n    \"executive_summary\"\n  ]\n}"
+      },
+      "id": "bed91cd6-862a-4e60-b019-6abd5bcd7296",
+      "name": "Decision Output Schema",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        2816,
+        1360
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// === 🧩 CONFIDENCE VALIDATOR ===\n\nfunction safeGet(raw) {\n  if (typeof raw === 'object' && raw !== null) return raw;\n  if (typeof raw === 'string') {\n    const cleaned = raw\n      .replace(/^```json\\s*/i, '')\n      .replace(/^```\\s*/i, '')\n      .replace(/```\\s*$/i, '')\n      .trim();\n    return JSON.parse(cleaned);\n  }\n  return {};\n}\n\nconst decision = safeGet($('🧩 Decision Agent').item.json.output);\nconst scoring  = $('🧩 Scoring Engine (Code)').item.json.scoring  || {};\nconst matching = safeGet($('🧩 Matching Agent').item.json.output);\n\nlet issues     = [];\nlet confidence = 1.0;\n\n// ── CHECK 1: Justification score must exist and be a valid number ──\nconst justScore = decision.justification_rating?.score;\nif (justScore == null || typeof justScore !== 'number') {\n  issues.push('Missing or invalid justification_rating.score');\n  confidence -= 0.3;\n}\n\n// ── CHECK 2: Strengths must exist and have content ─────────────────\nconst strengths = decision.candidate_strengths;\nif (!Array.isArray(strengths) || strengths.length === 0) {\n  issues.push('candidate_strengths missing or empty');\n  confidence -= 0.2;\n} else if (strengths.some(s => !s.title || !s.detail)) {\n  issues.push('One or more strengths missing title or detail');\n  confidence -= 0.1;\n}\n\n// ── CHECK 3: Weaknesses must exist and have severity ──────────────\nconst weaknesses = decision.candidate_weaknesses;\nif (!Array.isArray(weaknesses) || weaknesses.length === 0) {\n  issues.push('candidate_weaknesses missing or empty');\n  confidence -= 0.15;\n} else if (weaknesses.some(w => !['Minor','Moderate','Critical'].includes(w.severity))) {\n  issues.push('One or more weaknesses have invalid severity value');\n  confidence -= 0.1;\n}\n\n// ── CHECK 4: Executive summary must be substantive ─────────────────\nconst summary = decision.executive_summary || '';\nif (summary.length < 20) {\n  issues.push('executive_summary missing or too short (< 20 chars)');\n  confidence -= 0.2;\n}\n\n// ── CHECK 5: Risk and Reward factors must have valid scores ────────\nconst validScores = ['Low', 'Medium', 'High'];\nif (!validScores.includes(decision.risk_factor?.score)) {\n  issues.push('risk_factor.score missing or invalid');\n  confidence -= 0.1;\n}\nif (!validScores.includes(decision.reward_factor?.score)) {\n  issues.push('reward_factor.score missing or invalid');\n  confidence -= 0.1;\n}\n\n// ── CHECK 6: Skill matching must have produced results ─────────────\nconst matched = matching.matched_skills;\nconst missing = matching.missing_skills;\nif (!Array.isArray(matched) || !Array.isArray(missing)) {\n  issues.push('Matching Agent output malformed — matched/missing_skills not arrays');\n  confidence -= 0.25;\n} else if (matched.length === 0 && missing.length === 0) {\n  issues.push('Both matched_skills and missing_skills are empty — likely parse failure');\n  confidence -= 0.2;\n}\n\n// ── CHECK 7: Composite score must be a real number ─────────────────\nif (typeof scoring.composite_score !== 'number' || isNaN(scoring.composite_score)) {\n  issues.push('Scoring Engine composite_score is missing or NaN');\n  confidence -= 0.15;\n}\n\n// ── FINAL VERDICT ──────────────────────────────────────────────────\nconst finalConfidence = Math.max(0, parseFloat(confidence.toFixed(2)));\nconst shouldRetry     = finalConfidence < 0.6;\n\nreturn [{\n  json: {\n    confidence:   finalConfidence,\n    should_retry: shouldRetry,\n    pass:         !shouldRetry,\n    issues:       issues,\n    checks_run:   7,\n    checks_failed: issues.length,\n    // Pass decision through so Merge Final Output can read it directly\n    decision:     decision,\n    scoring:      scoring,\n    matching:     matching\n  }\n}];"
+      },
+      "id": "523f1a5f-2f26-4a54-b4db-8d7216f446f5",
+      "name": "🧩 Confidence Validator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3072,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.should_retry }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              },
+              "id": "b7bf8866-9bf3-4dc3-904c-4ca992b86b59"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "7dbd8f98-8eae-4723-a38e-b3093e48dd92",
+      "name": "Retry Router",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3312,
+        1120
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge all agent outputs into one final payload\n\nconst formData = $('On form submission').item.json;\nconst parserOutput = $('🧩 Parser Agent').item.json.output;\nconst matchingOutput = $('🧩 Matching Agent').item.json.output;\nconst scoringOutput = $('🧩 Scoring Engine (Code)').item.json.scoring;\nconst decisionOutput = $('🧩 Decision Agent').item.json.output;\nconst confidence = $('🧩 Confidence Validator').item.json;\n\nreturn [\n  {\n    json: {\n      applicant_name: formData['Full name'],\n      email: formData['Email Address'],\n      phone: formData['Phone Number'],\n      parsed: parserOutput,\n      skill_match: matchingOutput,\n      scoring: scoringOutput,\n      decision: decisionOutput,\n      validation: confidence,\n      final_score: scoringOutput.composite_score,\n      final_tier: scoringOutput.tier,\n      next_step: scoringOutput.recommended_next_step\n    }\n  }\n];"
+      },
+      "id": "8fa09d13-7551-4cbb-8f12-60c6be014886",
+      "name": "Merge Final Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3552,
+        1008
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log the retry event — in production you could re-trigger the analysis agents\nconst validator = $('🧩 Confidence Validator').item.json;\nconst formData = $('On form submission').item.json;\n\nconsole.log(`[RETRY NEEDED] Candidate: ${formData['Full name']} | Confidence: ${validator.confidence} | Issues: ${validator.issues.join(', ')}`);\n\nreturn [\n  {\n    json: {\n      status: 'LOW_CONFIDENCE_FLAGGED',\n      candidate: formData['Full name'],\n      email: formData['Email Address'],\n      confidence: validator.confidence,\n      issues: validator.issues,\n      message: 'Analysis confidence too low. Manual review required or re-submission needed.'\n    }\n  }\n];"
+      },
+      "id": "28350ffe-f0cb-42ee-88b5-749835869927",
+      "name": "Low Confidence — Log & Retry Notice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3552,
+        1248
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('On form submission').item.json['Email Address'] }}",
+        "subject": "Thanks for your application!",
+        "message": "=Hey {{ $('On form submission').item.json['Full name'].split(' ')[0] }},\n<br><br>\nThanks for applying! We've received your application and our team will review it shortly.\n<br>\nWe'll get back to you soon with the next steps.\n<br><br>\nBest,<br>[ShouryaX]",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        3792,
+        880
+      ],
+      "id": "11153620-0ea1-4747-97bf-149147893784",
+      "name": "Send Candidate Email",
+      "webhookId": "38c7227c-d8b7-47c6-b6e3-9871b2e8c48b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "rjNfv4VarOpSbRQ8",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "33e17e6a-555a-803a-a955-f76ab9b074c5",
+          "mode": "list",
+          "cachedResultName": "JOB APPLICANT TRACKER",
+          "cachedResultUrl": "https://www.notion.so/33e17e6a555a803aa955f76ab9b074c5"
+        },
+        "title": "={{ $('On form submission').item.json['Full name'] }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Applicant Name|title",
+              "title": "={{ $('On form submission').item.json['Full name'] }}"
+            },
+            {
+              "key": "First Name|rich_text",
+              "textContent": "={{ $('On form submission').item.json['Full name'].split(' ')[0] }}"
+            },
+            {
+              "key": "Last Name|rich_text",
+              "textContent": "={{ $('On form submission').item.json['Full name'].split(' ').slice(-1)[0] }}"
+            },
+            {
+              "key": "Application Date|date",
+              "date": "={{ $now }}"
+            },
+            {
+              "key": "Email|email",
+              "emailValue": "={{ $('On form submission').item.json['Email Address'] }}"
+            },
+            {
+              "key": "Overall fit|number",
+              "numberValue": "={{ $('Merge Final Output').item.json.final_score }}"
+            },
+            {
+              "key": "Tier|select",
+              "selectValue": "={{ $('Merge Final Output').item.json.final_tier }}"
+            },
+            {
+              "key": "Skill Match |number",
+              "numberValue": "={{ $('Merge Final Output').item.json.skill_match.match_percentage }}"
+            },
+            {
+              "key": "Matched Skills|rich_text",
+              "textContent": "={{ $('Merge Final Output').item.json.skill_match.matched_skills.join(', ') }}"
+            },
+            {
+              "key": "Phone Number|phone_number",
+              "phoneValue": "={{ String($('On form submission').item.json['Phone Number']) }}"
+            },
+            {
+              "key": "Confidence Score|number",
+              "numberValue": "={{ $('Merge Final Output').item.json.validation.confidence }}"
+            },
+            {
+              "key": "Next Step|select",
+              "selectValue": "={{ $('Merge Final Output').item.json.next_step }}"
+            },
+            {
+              "key": "Resume|url",
+              "urlValue": "={{ $('Download Resume').item.json.webViewLink }}"
+            },
+            {
+              "key": "Risk Factor|select",
+              "selectValue": "={{ $('Merge Final Output').item.json.decision.risk_factor.score }}"
+            },
+            {
+              "key": "Reward Factor|rich_text",
+              "textContent": "={{ $('Merge Final Output').item.json.decision.reward_factor.score }}"
+            },
+            {
+              "key": "Executive Summary|rich_text",
+              "textContent": "={{ $('Merge Final Output').item.json.decision.executive_summary }}"
+            },
+            {
+              "key": "Strengths|rich_text",
+              "textContent": "={{ $('Merge Final Output').item.json.decision.candidate_strengths\n.map((s, i) => `${i+1}. ${s.title}\\n${s.detail}`)\n.join('\\n\\n') }}"
+            },
+            {
+              "key": "Weaknesses|rich_text",
+              "textContent": "={{ $('Merge Final Output').item.json.decision.candidate_weaknesses.map(w => w.title + ': ' + w.detail).join('\\n\\n') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        3984,
+        1008
+      ],
+      "id": "b25999f8-6fcc-40cf-836b-84e74944df33",
+      "name": "Save to Notion",
+      "credentials": {
+        "notionApi": {
+          "id": "hA0PEMxj9pFo3hpk",
+          "name": "Notion account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"candidate\": {\n      \"type\": \"object\",\n      \"description\": \"Structured data extracted from the resume.\",\n      \"properties\": {\n        \"name\":                    { \"type\": \"string\",  \"description\": \"Full name of the candidate.\" },\n        \"email\":                   { \"type\": \"string\",  \"description\": \"Email address from the resume.\" },\n        \"total_experience_years\":  { \"type\": \"number\",  \"description\": \"Total years of professional experience.\" },\n        \"current_role\":            { \"type\": \"string\",  \"description\": \"Most recent or current job title.\" },\n        \"education_level\": {\n          \"type\": \"string\",\n          \"enum\": [\"High School\", \"Associate\", \"Bachelor's\", \"Master's\", \"PhD\", \"Other\"],\n          \"description\": \"Highest education level attained.\"\n        },\n        \"technical_skills\": {\n          \"type\": \"array\",\n          \"items\": { \"type\": \"string\" },\n          \"description\": \"All technical skills, tools, languages, frameworks, and platforms found in the resume.\"\n        },\n        \"soft_skills\": {\n          \"type\": \"array\",\n          \"items\": { \"type\": \"string\" },\n          \"description\": \"Soft skills explicitly mentioned in the resume.\"\n        },\n        \"job_titles_held\": {\n          \"type\": \"array\",\n          \"items\": { \"type\": \"string\" },\n          \"description\": \"All job titles the candidate has held, in chronological order.\"\n        }\n      },\n      \"required\": [\"name\", \"total_experience_years\", \"technical_skills\", \"soft_skills\", \"job_titles_held\"]\n    },\n    \"job\": {\n      \"type\": \"object\",\n      \"description\": \"Structured data extracted from the job description.\",\n      \"properties\": {\n        \"required_skills\": {\n          \"type\": \"array\",\n          \"items\": { \"type\": \"string\" },\n          \"description\": \"Must-have technical skills listed in the JD.\"\n        },\n        \"preferred_skills\": {\n          \"type\": \"array\",\n          \"items\": { \"type\": \"string\" },\n          \"description\": \"Nice-to-have or preferred skills listed in the JD.\"\n        },\n        \"required_experience_years\": {\n          \"type\": \"number\",\n          \"description\": \"Minimum years of experience required by the JD.\"\n        },\n        \"key_responsibilities\": {\n          \"type\": \"array\",\n          \"items\": { \"type\": \"string\" },\n          \"description\": \"Core responsibilities listed in the JD.\"\n        }\n      },\n      \"required\": [\"required_skills\", \"preferred_skills\", \"required_experience_years\", \"key_responsibilities\"]\n    }\n  },\n  \"required\": [\"candidate\", \"job\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1600,
+        1328
+      ],
+      "id": "3887bbd2-c17f-4555-882d-8021e5b52d68",
+      "name": "Structured Output Parser",
+      "retryOnFail": false,
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const resume = $('Extract Resume Text').item.json.text;\nconst jd = $('Extract JD Text').item.json.text;\n\nif (!resume || !jd) {\n  throw new Error(\"Missing resume or job description text\");\n}\n\nreturn [{ json: { resume, jd } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        1120
+      ],
+      "id": "e1e8ffe8-c992-4d66-8497-9c80b9244f55",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        1344
+      ],
+      "id": "bfb32cf9-fd17-406e-a64d-f2d520e424fa",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "TQykqpJavdSx01R7",
+          "name": "Google Gemini(PaLM) Api account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Upload Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Resume": {
+      "main": [
+        [
+          {
+            "node": "Download Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Resume": {
+      "main": [
+        [
+          {
+            "node": "Extract Resume Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Resume Text": {
+      "main": [
+        [
+          {
+            "node": "Download JD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download JD": {
+      "main": [
+        [
+          {
+            "node": "Extract JD Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract JD Text": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧩 Parser Agent": {
+      "main": [
+        [
+          {
+            "node": "🧩 Matching Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini — Matching": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🧩 Matching Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Matching Output Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "🧩 Matching Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧩 Matching Agent": {
+      "main": [
+        [
+          {
+            "node": "🧩 Scoring Engine (Code)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧩 Scoring Engine (Code)": {
+      "main": [
+        [
+          {
+            "node": "🧩 Decision Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini — Decision": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🧩 Decision Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decision Output Schema": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "🧩 Decision Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧩 Decision Agent": {
+      "main": [
+        [
+          {
+            "node": "🧩 Confidence Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧩 Confidence Validator": {
+      "main": [
+        [
+          {
+            "node": "Retry Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Router": {
+      "main": [
+        [
+          {
+            "node": "Merge Final Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Low Confidence — Log & Retry Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Final Output": {
+      "main": [
+        [
+          {
+            "node": "Send Candidate Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Candidate Email": {
+      "main": [
+        [
+          {
+            "node": "Save to Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "🧩 Parser Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "🧩 Parser Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🧩 Parser Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "abcc6d44-db8e-4fc7-99bf-1002b671cc34",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cbb9c00ba5db89df39f19e199f4a96679ecb173ad1b0be03dd1ffa310315c61a"
+  },
+  "id": "rDHVGkhq1vXfIkYH",
+  "tags": []
+}
